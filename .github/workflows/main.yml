@@ -1,0 +1,31 @@
+name: RISC-V bare metal CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+  schedule:
+  - cron: "27 * * * *"
+
+jobs:
+  build:
+
+    # to-do: flip to ubuntu latest:
+    # see: https://github.com/actions/runner-images/issues/10636
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: install dependencies
+      run: |
+          sudo apt update --yes
+          sudo apt install -o Acquire::Retries=3 --yes \
+              gcc-riscv64-unknown-elf qemu-system-misc
+    - name: make
+      run: make
+    - name: make run
+      run: sh -c 'timeout 2 make run || true &' 2>&1 | tee output
+    - name: check expected output
+      run: grep --silent '^hello world!' output
