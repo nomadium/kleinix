@@ -7,14 +7,12 @@ on:
   pull_request:
 
   schedule:
-  - cron: "27 * * * *"
+  - cron: "40 2 * * *"
 
 jobs:
   build:
 
-    # to-do: flip to ubuntu latest:
-    # see: https://github.com/actions/runner-images/issues/10636
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -22,10 +20,19 @@ jobs:
       run: |
           sudo apt update --yes
           sudo apt install -o Acquire::Retries=3 --yes \
-              gcc-riscv64-unknown-elf qemu-system-misc
+              gcc-riscv64-unknown-elf \
+              qemu-system-misc        \
+              opensbi                 \
+              u-boot-qemu             \
+              u-boot-tools
     - name: make
       run: make
     - name: make run
-      run: sh -c 'timeout 2 make run || true &' 2>&1 | tee output
+      run: sh -c 'timeout 3 make run || true &' 2>&1 | tee output
     - name: check expected output
-      run: grep --silent '^hello world!' output
+      run: |
+          grep --silent             \
+              -e 'OpenSBI v[0-9]\+' \
+              -e '^U-Boot [0-9]\+'  \
+              -e '^hello world!'    \
+              output.log
