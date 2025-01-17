@@ -1,0 +1,54 @@
+/* https://www.thegoodpenguin.co.uk/blog/u-boot-fit-image-overview/ */
+
+/dts-v1/;
+
+/ {
+        description = "kernel FIT Image";
+        #address-cells = <1>;
+
+        images {
+                kernel {
+                        description = "Kernel";
+                        data = /incbin/("../hello.img");
+                        type = "kernel";
+                        arch = "riscv";
+                        os = "linux";
+                        compression = "none";
+                        load = <0x84000000>;
+                        entry = <0x84000000>;
+                        hash {
+                                algo = "sha1";
+                        };
+                };
+                /*
+                 * DTB file obtained with:
+                 * qemu-system-riscv64 -machine virt -machine dumpdtb=qemu.dtb
+                 *
+                 * See: https://docs.u-boot.org/en/latest/develop/devicetree/dt_qemu.html
+                 */
+                fdt {
+                        description = "DTB";
+                        data = /incbin/("riscv-qemu-virt.dtb");
+                        type = "flat_dt";
+                        arch = "risc-v";
+                        compression = "none";
+                        load = <0x8c000000>;
+                        entry = <0x8c000000>;
+                        hash {
+                                algo = "sha1";
+                        };
+                };
+        };
+
+        configurations {
+                default = "standard";
+                standard {
+                        description = "Standard Boot";
+                        kernel = "kernel";
+                        fdt = "fdt";
+                        hash {
+                                algo = "sha1";
+                        };
+                };
+        };
+};

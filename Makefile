@@ -27,6 +27,6 @@ QEMU_NET_HW_FLAGS = -device virtio-net-device,netdev=net -netdev user,id=net,tft
 QEMU_FLAGS        = $(QEMU_HW_FLAGS) $(QEMU_BOOT_FLAGS) $(QEMU_NET_HW_FLAGS)
 run: hello.img
 	mkdir -p build
-	cp $< build
-	mkimage -A riscv -T script -C none -n 'Boot script' -d uboot.cmd build/boot.scr.uimg
+	mkimage -f boot/hello.its build/hello.itb
+	mkimage -A riscv -T script -C none -n 'Boot script' -d boot/uboot.cmd build/boot.scr.uimg
 	qemu-system-riscv64 $(QEMU_FLAGS)
