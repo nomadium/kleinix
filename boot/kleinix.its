@@ -9,7 +9,7 @@
         images {
                 kernel {
                         description = "Kernel";
-                        data = /incbin/("../hello.img");
+                        data = /incbin/("../kleinix.img");
                         type = "kernel";
                         arch = "riscv";
                         os = "linux";
