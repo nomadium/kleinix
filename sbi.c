@@ -4,6 +4,14 @@
 
 void (*sbi_console_puts)(const char *);
 
+enum sbi_imp {
+	OpenSBI = 1,
+};
+
+const char *SBI_IMP_NAME[] = {
+	[OpenSBI]    "OpenSBI",
+};
+
 /* Inspired by this example:
  * https://github.com/riscv-software-src/opensbi/blob/v1.5/firmware/payloads/test_main.c
  */
@@ -89,4 +97,114 @@ sbi_console_init(void)
 	sbi_console_puts(warn);
 
 	return;
+}
+
+inline struct sbiret
+sbi_hart_start(unsigned long hartid,
+		unsigned long start_addr, unsigned long opaque)
+{
+	return sbi_ecall(SBI_EXT_HSM, SBI_EXT_HSM_HART_START,
+			hartid, start_addr, opaque, 0, 0, 0);
+}
+
+inline struct sbiret
+sbi_system_reset(uint32_t reset_type, uint32_t reset_reason)
+{
+	return sbi_ecall(SBI_EXT_SRST, SBI_EXT_SRST_RESET,
+			reset_type, reset_reason, 0, 0, 0, 0);
+}
+
+static inline void
+sbi_legacy_shutdown(void)
+{
+	sbi_ecall(SBI_EXT_0_1_SHUTDOWN, 0, 0, 0, 0, 0, 0, 0);
+}
+
+void
+sbi_system_shutdown(void)
+{
+	struct sbiret ret = sbi_probe_extension(SBI_EXT_SRST);
+
+	if (ret.value)
+		sbi_system_reset(SBI_SRST_RESET_TYPE_SHUTDOWN,
+				SBI_SRST_RESET_REASON_NONE);
+
+	sbi_legacy_shutdown();
+}
+
+inline struct sbiret
+sbi_get_spec_version(void)
+{
+	return sbi_ecall(SBI_EXT_BASE, SBI_EXT_BASE_GET_SPEC_VERSION,
+			0, 0, 0, 0, 0, 0);
+}
+
+inline struct sbiret
+sbi_get_impl_id(void)
+{
+	return sbi_ecall(SBI_EXT_BASE, SBI_EXT_BASE_GET_IMP_ID,
+			0, 0, 0, 0, 0, 0);
+}
+
+inline struct sbiret
+sbi_get_impl_version(void)
+{
+	return sbi_ecall(SBI_EXT_BASE, SBI_EXT_BASE_GET_IMP_VERSION,
+			0, 0, 0, 0, 0, 0);
+}
+
+inline struct sbiret
+sbi_get_mvendorid(void)
+{
+	return sbi_ecall(SBI_EXT_BASE, SBI_EXT_BASE_GET_MVENDORID,
+			0, 0, 0, 0, 0, 0);
+}
+
+inline struct sbiret
+sbi_get_marchid(void)
+{
+	return sbi_ecall(SBI_EXT_BASE, SBI_EXT_BASE_GET_MARCHID,
+			0, 0, 0, 0, 0, 0);
+}
+
+inline struct sbiret
+sbi_get_mimpid(void)
+{
+	return sbi_ecall(SBI_EXT_BASE, SBI_EXT_BASE_GET_MIMPID,
+			0, 0, 0, 0, 0, 0);
+}
+
+void
+sbi_print_base_info(void)
+{
+	struct sbiret ret;
+	unsigned long spec_version, impl_id;
+	int impl_major, impl_minor;
+	int spec_major, spec_minor;
+	char *impl_info_fmt, *spec_info_fmt;
+	const char *impl_name;
+
+	ret = sbi_get_impl_id();
+	impl_id = ret.value;
+	ret = sbi_get_impl_version();
+	impl_major = ret.value >> 16;
+	impl_minor = ret.value & 0xFFFF;
+	if (impl_id == OpenSBI) {
+		impl_name = SBI_IMP_NAME[impl_id];
+		impl_info_fmt = "SBI: %s v%d.%d";
+		printf(impl_info_fmt, impl_name, impl_major, impl_minor);
+	} else {
+		/* There are multiple known SBI implementations but only OpenSBI
+		 * has been tested. Rework this bit if/when other impls are tested.
+		 * https://github.com/riscv-non-isa/riscv-sbi-doc/releases/download/v2.0/riscv-sbi.pdf
+		 * 4.9. SBI Implementation IDs */
+		impl_info_fmt = "SBI: Unknown implementation";
+		printf(impl_info_fmt);
+	}
+
+	spec_info_fmt = ", SBI Specification Version %d.%d\n";
+	ret = sbi_get_spec_version();
+	spec_minor = ret.value & 0xFFFFFF;
+	spec_major = (ret.value >> 24) & 0x7F;
+	printf(spec_info_fmt, spec_major, spec_minor);
 }

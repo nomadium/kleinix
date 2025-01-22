@@ -28,7 +28,7 @@ jobs:
     - name: make
       run: make
     - name: make run
-      run: sh -c 'timeout 4s make run || true &' 2>&1 | tee output
+      run: sh -c 'timeout 30s make run || true &' 2>&1 | tee output
     - name: check expected output
       run: |
           grep --silent             \
@@ -37,4 +37,6 @@ jobs:
               -e '^Starting kernel' \
               -e '^Kleinix v[0-9] ' \
               -e '^Hello World!'    \
+              -e '^cpu0: '          \
+              -e '^cpu1: '          \
               output
