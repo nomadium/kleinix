@@ -178,7 +178,7 @@ void
 sbi_print_base_info(void)
 {
 	struct sbiret ret;
-	unsigned long spec_version, impl_id;
+	unsigned long impl_id;
 	int impl_major, impl_minor;
 	int spec_major, spec_minor;
 	char *impl_info_fmt, *spec_info_fmt;

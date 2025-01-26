@@ -65,12 +65,13 @@ int
 puts(const char *s)
 {
 	sbi_console_puts(s);
+	return 0;
 }
 
 int
 printf(const char *format, ...)
 {
-	char c, n, buf[128], *str;
+	char buf[128], *str;
 	const char *ptrfmt;
 	int i, num;
 	va_list args;

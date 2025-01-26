@@ -37,6 +37,7 @@ void sbi_start_non_boot_harts(void)
 		return;
 	}
 
+	hart_id = r_tp();
 	// XXX: look at devicetree data instead of attempting start
 	// on non-existent harts...
 	for (i = 0; i < NCPU; i++) {
