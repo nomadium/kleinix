@@ -1,12 +1,9 @@
 #ifndef __SBI_H__
 #define __SBI_H__
 
+#include "../types.h"
 #include "sbi_ecall_interface.h"
-
-// kernel/types.h defines this
-// XXX: move this somewhere else
-typedef unsigned int uint32_t;
-typedef unsigned int uint32;
+#include "sbi_console.h"
 
 /* Inspired by this example:
  * https://github.com/riscv-software-src/opensbi/blob/v1.5/firmware/payloads/test_main.c
@@ -29,6 +26,10 @@ sbi_console_init(void);
 
 struct sbiret
 sbi_debug_console_write(unsigned long num_bytes,
+		unsigned long base_addr_lo, unsigned long base_addr_hi);
+
+struct sbiret
+sbi_debug_console_read(unsigned long num_bytes,
 		unsigned long base_addr_lo, unsigned long base_addr_hi);
 
 struct sbiret
@@ -61,5 +62,8 @@ sbi_get_mimpid(void);
 
 void
 sbi_print_base_info(void);
+
+void __attribute__((noreturn))
+sbi_hart_hang(void);
 
 #endif /* __SBI_H__ */

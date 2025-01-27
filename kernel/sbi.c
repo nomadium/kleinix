@@ -2,14 +2,19 @@
 #include "sbi/sbi.h"
 #include "sbi/sbi_ecall_interface.h"
 
-void (*sbi_console_puts)(const char *);
-
 enum sbi_imp {
 	OpenSBI = 1,
 };
 
-const char *SBI_IMP_NAME[] = {
+static const char *sbi_imp_name[] = {
 	[OpenSBI]    "OpenSBI",
+};
+
+static struct sbi_console_device default_console_dev = {
+	.name         = "sbi_console",
+	.console_putc = NULL,
+	.console_puts = NULL,
+	.console_getc = NULL,
 };
 
 /* Inspired by this example:
@@ -47,23 +52,11 @@ sbi_probe_extension(long extension_id)
 			(unsigned long)extension_id, 0, 0, 0, 0, 0);
 }
 
-static inline long
-sbi_legacy_console_putchar(int ch)
+static inline void
+sbi_legacy_console_putchar(char ch)
 {
-	struct sbiret ret;
-
-	ret = sbi_ecall(SBI_EXT_0_1_CONSOLE_PUTCHAR, 0,
+	sbi_ecall(SBI_EXT_0_1_CONSOLE_PUTCHAR, 0,
 			(unsigned long)ch, 0, 0, 0, 0, 0);
-
-	return ret.value;
-}
-
-static void
-sbi_legacy_console_puts(const char *str)
-{
-	char c;
-	while ((c = *str++))
-		sbi_legacy_console_putchar(c);
 }
 
 inline struct sbiret
@@ -74,29 +67,67 @@ sbi_debug_console_write(unsigned long num_bytes,
 			num_bytes, base_addr_lo, base_addr_hi, 0, 0, 0);
 }
 
-static void
-sbi_debug_console_puts(const char *str)
+static inline int
+sbi_legacy_console_getchar(void)
 {
-	sbi_debug_console_write(strlen(str), (unsigned long)str, 0);
+	struct sbiret ret;
+
+	ret = sbi_ecall(SBI_EXT_0_1_CONSOLE_GETCHAR, 0,
+			0, 0, 0, 0, 0, 0);
+	return ret.value;
+}
+
+inline struct sbiret
+sbi_debug_console_read(unsigned long num_bytes,
+		unsigned long base_addr_lo, unsigned long base_addr_hi)
+{
+	return sbi_ecall(SBI_EXT_DBCN, SBI_EXT_DBCN_CONSOLE_READ,
+			num_bytes, base_addr_lo, base_addr_hi, 0, 0, 0);
+}
+
+static int
+sbi_debug_console_getchar(void)
+{
+	struct sbiret ret;
+	char buf;
+	ret = sbi_debug_console_read(1, (unsigned long)&buf, 0);
+	return ret.value > 0 ? buf : -1;
+}
+
+static unsigned long
+sbi_debug_console_puts(const char *str, unsigned long num_bytes)
+{
+	struct sbiret ret;
+	ret = sbi_debug_console_write(num_bytes, (unsigned long)str, 0);
+	return ret.value;
 }
 
 void
 sbi_console_init(void)
 {
-	struct sbiret ret = sbi_probe_extension(SBI_EXT_DBCN);
+	struct sbiret ret;
+	struct sbi_console_device *console_dev;
 	const char *warn;
 
+	console_dev = &default_console_dev;
+
+	ret = sbi_probe_extension(SBI_EXT_DBCN);
 	if (ret.value) {
-		sbi_console_puts = &sbi_debug_console_puts;
-		return;
+		console_dev->console_puts = &sbi_debug_console_puts;
+		console_dev->console_getc = &sbi_debug_console_getchar;
 	}
 
-	sbi_console_puts = &sbi_legacy_console_puts;
+	console_dev->console_putc = &sbi_legacy_console_putchar;
 
-	warn = "sbi: warning: deprecated sbi_console_putchar extension in use.\n";
-	sbi_console_puts(warn);
+	if (!console_dev->console_getc)
+		console_dev->console_getc = &sbi_legacy_console_getchar;
 
-	return;
+	sbi_console_set_device(console_dev);
+
+	if (!console_dev->console_puts) {
+		warn = "sbi: warning: deprecated sbi_console_putchar extension in use.\n";
+		sbi_puts(warn);
+	}
 }
 
 inline struct sbiret
@@ -190,21 +221,29 @@ sbi_print_base_info(void)
 	impl_major = ret.value >> 16;
 	impl_minor = ret.value & 0xFFFF;
 	if (impl_id == OpenSBI) {
-		impl_name = SBI_IMP_NAME[impl_id];
+		impl_name = sbi_imp_name[impl_id];
 		impl_info_fmt = "SBI: %s v%d.%d";
-		printf(impl_info_fmt, impl_name, impl_major, impl_minor);
+		sbi_printf(impl_info_fmt, impl_name, impl_major, impl_minor);
 	} else {
 		/* There are multiple known SBI implementations but only OpenSBI
 		 * has been tested. Rework this bit if/when other impls are tested.
 		 * https://github.com/riscv-non-isa/riscv-sbi-doc/releases/download/v2.0/riscv-sbi.pdf
 		 * 4.9. SBI Implementation IDs */
 		impl_info_fmt = "SBI: Unknown implementation";
-		printf(impl_info_fmt);
+		sbi_puts(impl_info_fmt);
 	}
 
 	spec_info_fmt = ", SBI Specification Version %d.%d\n";
 	ret = sbi_get_spec_version();
 	spec_minor = ret.value & 0xFFFFFF;
 	spec_major = (ret.value >> 24) & 0x7F;
-	printf(spec_info_fmt, spec_major, spec_minor);
+	sbi_printf(spec_info_fmt, spec_major, spec_minor);
+}
+
+void __attribute__((noreturn))
+sbi_hart_hang(void)
+{
+	while (1)
+		asm volatile("wfi");
+	__builtin_unreachable();
 }

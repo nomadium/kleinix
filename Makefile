@@ -1,9 +1,10 @@
 K = kernel
 
 OBJS = \
-  $K/entry.o \
-  $K/klibc.o \
-  $K/sbi.o   \
+  $K/entry.o       \
+  $K/klibc.o       \
+  $K/sbi.o         \
+  $K/sbi_console.o \
   $K/start.o
 
 TOOLPREFIX = riscv64-unknown-elf-
@@ -13,7 +14,8 @@ LD         = $(TOOLPREFIX)ld
 OBJCOPY    = $(TOOLPREFIX)objcopy
 OBJDUMP    = $(TOOLPREFIX)objdump
 
-CFLAGS  = -Wall -Werror -O -fno-omit-frame-pointer -ggdb -gdwarf-2
+#CFLAGS  = -Wall -Werror -O -fno-omit-frame-pointer -ggdb -gdwarf-2 # XXX: enable optimization later
+CFLAGS  = -Wall -Werror -fno-omit-frame-pointer -ggdb -gdwarf-2
 CFLAGS += -MD
 CFLAGS += -mcmodel=medany
 CFLAGS += -nostartfiles -fno-common -nostdlib

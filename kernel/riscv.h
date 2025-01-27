@@ -1,10 +1,7 @@
 #ifndef __RISCV_H__
 #define __RISCV_H__
 
-
-// XXX: in xv6 kernel/types.h defines this
-// probably we should fo the same
-typedef unsigned long uint64;
+#include "types.h"
 
 
 static inline uint64

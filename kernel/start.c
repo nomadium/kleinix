@@ -6,13 +6,9 @@
 // entry.S needs one stack per CPU.
 __attribute__ ((aligned (16))) char stack0[4096 * NCPU];
 
-// function to print to the console during early boot.
-extern void (*sbi_console_puts)(const char *);
+int boot_hart_id = -1;
 
 extern void _entry(void);
-
-int boot_hart_id = -1;
-void non_boot_start(void);
 
 #define OSNAME  "Kleinix"
 #define VERSION "0.0.1"
@@ -33,7 +29,7 @@ void sbi_start_non_boot_harts(void)
 	ret = sbi_probe_extension(SBI_EXT_HSM);
 	if (!ret.value) {
 		warn = "sbi: warning: HSM extension is not available.\n";
-		sbi_console_puts(warn);
+		sbi_puts(warn);
 		return;
 	}
 
@@ -70,7 +66,7 @@ cpu_identify(int hart_id)
 	mimpid = ret.value;
 
 	cpu_id_fmt = "cpu%d: vendor %d arch %d imp %d\n";
-	printf(cpu_id_fmt, hart_id, mvendorid, marchid, mimpid);
+	sbi_printf(cpu_id_fmt, hart_id, mvendorid, marchid, mimpid);
 }
 
 // entry.S: boot cpu jumps here in supervisor mode on stack0.
@@ -80,19 +76,20 @@ start()
 	int hart_id = r_tp();
 
 	sbi_console_init();
-	sbi_console_puts(BANNER);
-	printf("%s v%s\n", OSNAME, VERSION);
+	sbi_puts(BANNER);
+	sbi_printf("%s v%s\n", OSNAME, VERSION);
 	sbi_print_base_info();
 	cpu_identify(hart_id);
-	printf("cpu%d: Hello World!!!\n", hart_id);
+	sbi_printf("cpu%d: Hello World!!!\n", hart_id);
+	sbi_printf("boot_hart_id: %d\n", boot_hart_id);
 	sbi_start_non_boot_harts();
 	// assert boot_hart_id > 0;
 	// report boot_hart_id
 	// main();
-	printf("cpu%d: system will shutdown in a few secs...", hart_id);
-	delay(3);
+	sbi_printf("cpu%d: system will shutdown in a few secs...\n", hart_id);
+	delay(10);
 	sbi_system_shutdown();
-	for (;;) ;
+	sbi_hart_hang(); // unreachable
 }
 
 // non-boot cpu(s) jump here in supervisor mode on stack0.
@@ -101,6 +98,6 @@ non_boot_start(void)
 {
 	int hart_id = r_tp();
 	cpu_identify(hart_id);
-	printf("cpu%d: non_boot_cpu\n", hart_id);
-	for (;;) ;
+	sbi_printf("cpu%d: non_boot_cpu\n", hart_id);
+	sbi_hart_hang();
 }
