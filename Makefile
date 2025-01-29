@@ -7,6 +7,7 @@ OBJS = \
   $K/klibc.o       \
   $K/sbi.o         \
   $K/sbi_console.o \
+  $K/sbi_helper.o  \
   $K/start.o
 
 TOOLPREFIX = riscv64-unknown-elf-

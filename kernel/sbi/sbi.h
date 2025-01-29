@@ -18,19 +18,30 @@ struct sbiret sbi_ecall(int ext,  int fid,  unsigned long arg0,
 			unsigned long arg3, unsigned long arg4,
 			unsigned long arg5);
 
+/* SBI calls */
+
 struct sbiret
 sbi_probe_extension(long extension_id);
-
-void
-sbi_console_init(void);
 
 struct sbiret
 sbi_debug_console_write(unsigned long num_bytes,
 		unsigned long base_addr_lo, unsigned long base_addr_hi);
 
+unsigned long
+sbi_debug_console_puts(const char *str, unsigned long num_bytes);
+
+void
+sbi_legacy_console_putchar(char ch);
+
 struct sbiret
 sbi_debug_console_read(unsigned long num_bytes,
 		unsigned long base_addr_lo, unsigned long base_addr_hi);
+
+int
+sbi_debug_console_getchar(void);
+
+int
+sbi_legacy_console_getchar(void);
 
 struct sbiret
 sbi_hart_start(unsigned long hartid,
@@ -60,8 +71,16 @@ sbi_get_marchid(void);
 struct sbiret
 sbi_get_mimpid(void);
 
+/* Other SBI related tasks */
+
 void
-sbi_print_base_info(void);
+sbi_console_init(void);
+
+void
+sbi_identify(void);
+
+void
+sbi_non_boot_hart_start(unsigned long entry_point);
 
 void __attribute__((noreturn))
 sbi_hart_hang(void);

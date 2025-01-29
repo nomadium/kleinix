@@ -31,11 +31,11 @@ start()
 	sbi_console_init();
 	sbi_puts(BANNER);
 	sbi_printf("%s v%s\n", OSNAME, VERSION);
-	sbi_print_base_info();
+	sbi_identify();
 	cpu_identify(hart_id);
 	sbi_printf("cpu%d: Hello World!!!\n", hart_id);
 	sbi_printf("boot_hart_id: %d\n", boot_hart_id);
-	start_non_boot_harts((unsigned long)_entry);
+	sbi_non_boot_hart_start((unsigned long)_entry);
 	// assert boot_hart_id > 0;
 	// report boot_hart_id
 	// main();
