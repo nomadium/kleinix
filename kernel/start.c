@@ -46,7 +46,7 @@ void
 delay(int n)
 {
 	int c = 1000000000 * n;
-	do {} while (c--);
+	do { asm(""); } while (c--);
 }
 
 void
