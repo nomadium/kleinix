@@ -1,7 +1,9 @@
 K = kernel
 
+# entry obj must go first
 OBJS = \
   $K/entry.o       \
+  $K/cpu.o         \
   $K/klibc.o       \
   $K/sbi.o         \
   $K/sbi_console.o \
