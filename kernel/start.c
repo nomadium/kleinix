@@ -52,5 +52,10 @@ non_boot_start(void)
 	int hart_id = hartid();
 	cpu_identify(hart_id);
 	sbi_printf("cpu%d: non_boot_cpu\n", hart_id);
-	sbi_hart_hang();
+	if (hart_id == 1) { // testing enabling interrups in 1 core
+		intrsinit();
+		timerinit();
+	}
+	delay(10);       // not reached for now
+	sbi_hart_hang(); // not reached for now
 }

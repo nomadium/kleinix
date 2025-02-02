@@ -41,12 +41,9 @@ clean:
 -include kernel/*.d
 
 
-OPENSBI = /usr/lib/riscv64-linux-gnu/opensbi/generic/fw_jump.bin
-UBOOT   = /usr/lib/u-boot/qemu-riscv64_smode/u-boot.bin
-
-ifndef CPUS
-CPUS := 4
-endif
+OPENSBI ?= /usr/lib/riscv64-linux-gnu/opensbi/generic/fw_jump.bin
+UBOOT   ?= /usr/lib/u-boot/qemu-riscv64_smode/u-boot.bin
+CPUS    ?= 4
 
 QEMU              = qemu-system-riscv64
 QEMU_HW_FLAGS     = -M virt -m 256 -smp $(CPUS) -nographic -display none

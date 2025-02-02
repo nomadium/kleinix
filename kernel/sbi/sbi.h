@@ -71,6 +71,12 @@ sbi_get_marchid(void);
 struct sbiret
 sbi_get_mimpid(void);
 
+long
+sbi_legacy_set_timer(uint64_t stime_value);
+
+struct sbiret
+sbi_timer_set_timer(uint64_t stime_value);
+
 /* Other SBI related tasks */
 
 void
@@ -84,5 +90,8 @@ sbi_non_boot_hart_start(unsigned long entry_point);
 
 void __attribute__((noreturn))
 sbi_hart_hang(void);
+
+struct sbiret
+sbi_set_timer(uint64_t stime_value);
 
 #endif /* __SBI_H__ */

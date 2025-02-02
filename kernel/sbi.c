@@ -162,3 +162,20 @@ sbi_get_mimpid(void)
 	return sbi_ecall(SBI_EXT_BASE, SBI_EXT_BASE_GET_MIMPID,
 			0, 0, 0, 0, 0, 0);
 }
+
+inline long
+sbi_legacy_set_timer(uint64_t stime_value)
+{
+	struct sbiret ret;
+
+	ret = sbi_ecall(SBI_EXT_0_1_SET_TIMER, 0,
+			stime_value, 0, 0, 0, 0, 0);
+	return ret.value;
+}
+
+inline struct sbiret
+sbi_timer_set_timer(uint64_t stime_value)
+{
+	return sbi_ecall(SBI_EXT_TIME, SBI_EXT_TIME_SET_TIMER,
+			stime_value, 0, 0, 0, 0, 0);
+}

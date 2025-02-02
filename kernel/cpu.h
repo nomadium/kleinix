@@ -16,4 +16,10 @@ delay(int n);
 void
 cpu_identify(int hart_id);
 
+void
+intrsinit(void);
+
+void
+timerinit(void);
+
 #endif /* __CPU_H__ */

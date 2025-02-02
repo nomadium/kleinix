@@ -112,3 +112,21 @@ sbi_hart_hang(void)
 		asm volatile("wfi");
 	__builtin_unreachable();
 }
+
+struct sbiret
+sbi_set_timer(uint64_t stime_value)
+{
+	struct sbiret ret;
+	long r;
+
+	ret = sbi_probe_extension(SBI_EXT_TIME);
+	if (!ret.value) {
+		if ((r = sbi_legacy_set_timer(stime_value)))
+			ret.error = r;
+		ret.value = 0;
+		return ret;
+	}
+
+	ret = sbi_timer_set_timer(stime_value);
+	return ret;
+}
