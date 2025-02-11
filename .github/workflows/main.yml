@@ -33,11 +33,10 @@ jobs:
     - name: check expected output
       run: |
           git grep --quiet --no-index --all-match \
-              -e '^OpenSBI v[0-9]\+' \
-              -e '^U-Boot [0-9]\+'   \
-              -e '^Starting kernel'  \
-              -e '^Kleinix v[0-9]'   \
-              -e 'Hello World!'      \
-              -e '^cpu0: '           \
-              -e '^cpu1: '           \
+              -e '^OpenSBI v[0-9]\+'     \
+              -e '^U-Boot [0-9]\+'       \
+              -e '^Starting kernel'      \
+              -e '^Kleinix v[0-9]'       \
+              -e '^cpu.\+: Hello World!' \
+              -e '^cpu.\+: non_boot_cpu' \
               output
