@@ -16,7 +16,7 @@ spin_lock(spinlock_t *lock)
 	//   a5 = 1
 	//   s1 = &lock->locked
 	//   amoswap.w.aq a5, a5, (s1)
-	while(__sync_lock_test_and_set(&lock->locked, 1) != 0);
+	while (__sync_lock_test_and_set(&lock->locked, 1) != 0);
 	// Tell the C compiler and the processor to not move loads or stores
 	// past this point, to ensure that the critical section's memory
 	// references happen strictly after the lock is acquired.
@@ -31,7 +31,7 @@ void
 spin_unlock(spinlock_t *lock)
 {
 
-	if(!holding(lock))
+	if (!holding(lock))
 		sbi_panic("spin_unlock");
 
 	lock->cpu = 0;
