@@ -20,6 +20,7 @@ jobs:
       run: |
           sudo apt update --yes
           sudo apt install -o Acquire::Retries=3 --yes \
+              git                     \
               gcc-riscv64-unknown-elf \
               qemu-system-misc        \
               opensbi                 \
@@ -31,12 +32,12 @@ jobs:
       run: sh -c 'timeout 30s make run || true &' 2>&1 | tee output
     - name: check expected output
       run: |
-          grep --silent             \
-              -e 'OpenSBI v[0-9]\+' \
-              -e '^U-Boot [0-9]\+'  \
-              -e '^Starting kernel' \
-              -e '^Kleinix v[0-9] ' \
-              -e '^Hello World!'    \
-              -e '^cpu0: '          \
-              -e '^cpu1: '          \
+          git grep --quiet --no-index --all-match \
+              -e '^OpenSBI v[0-9]\+' \
+              -e '^U-Boot [0-9]\+'   \
+              -e '^Starting kernel'  \
+              -e '^Kleinix v[0-9]'   \
+              -e 'Hello World!'      \
+              -e '^cpu0: '           \
+              -e '^cpu1: '           \
               output
