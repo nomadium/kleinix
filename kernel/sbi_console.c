@@ -9,6 +9,7 @@
 
 #include "sbi/sbi.h"
 #include "sbi/sbi_console.h"
+#include "spinlock.h"
 #include "klibc.h"
 
 #define CONSOLE_TBUF_MAX 256
@@ -16,12 +17,7 @@
 static const struct sbi_console_device *console_dev = NULL;
 static char console_tbuf[CONSOLE_TBUF_MAX];
 static u32 console_tbuf_len;
-//XXX: fix: YOLO, no locks for now...
-//static spinlock_t console_out_lock	       = SPIN_LOCK_INITIALIZER;
-typedef int spinlock_t;
-spinlock_t console_out_lock;
-void spin_lock(spinlock_t *lock) {}
-void spin_unlock(spinlock_t *lock) {}
+static spinlock_t console_out_lock = SPIN_LOCK_INITIALIZER;
 
 bool sbi_isprintable(char c)
 {
