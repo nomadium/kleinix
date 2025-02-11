@@ -39,6 +39,7 @@ clean:
 	rm -rf */*.o */*.sym */*.d */*.asm $K/kleinix.elf $K/kleinix.img build
 
 -include kernel/*.d
+-include Makefile.local
 
 
 OPENSBI ?= /usr/lib/riscv64-linux-gnu/opensbi/generic/fw_jump.bin
