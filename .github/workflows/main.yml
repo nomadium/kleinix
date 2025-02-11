@@ -28,6 +28,8 @@ jobs:
               u-boot-tools
     - name: make
       run: make
+    - name: print disassembly
+      run: cat kernel/kleinix.asm
     - name: make run
       run: sh -c 'timeout 30s make run || true &' 2>&1 | tee output
     - name: check expected output
