@@ -9,9 +9,6 @@ holding(spinlock_t *lock);
 void
 spin_lock(spinlock_t *lock)
 {
-	if (lock->locked)
-		sbi_panic("spin_lock");
-
 	// On RISC-V, sync_lock_test_and_set turns into an atomic swap:
 	//   a5 = 1
 	//   s1 = &lock->locked
