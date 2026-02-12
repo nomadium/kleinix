@@ -13,7 +13,20 @@ _entry:
     la   t0, boot_hart_id        # load boot_hart_id value
     lw   t1, 0(t0)               # from memory
     bge  t1, zero, sstack        # if >= 0, system already booted, go to stack set up
-    sw   tp, 0(t0)               # if < 0, this hart is booting up, store its id
+
+    # First hart: zero out .bss section
+    la   t0, _bss_start
+    la   t1, _bss_end
+bss_clear:
+    bge  t0, t1, bss_done
+    sd   zero, 0(t0)
+    addi t0, t0, 8
+    j    bss_clear
+bss_done:
+
+    # Now store boot hart id
+    la   t0, boot_hart_id
+    sw   tp, 0(t0)
 
 sstack:
     # set up a stack for C.
