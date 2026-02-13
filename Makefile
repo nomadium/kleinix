@@ -37,7 +37,7 @@ $K/kleinix.img: $K/kleinix.elf
 	$(OBJCOPY) -O binary $< $@
 
 clean:
-	rm -rf */*.o */*.sym */*.d */*.asm $K/kleinix.elf $K/kleinix.img build
+	rm -rf */*.o */*.sym */*.d */*.asm $K/kleinix.elf $K/kleinix.img image
 
 -include kernel/*.d
 -include Makefile.local
@@ -50,10 +50,11 @@ CPUS    ?= 4
 QEMU              = qemu-system-riscv64
 QEMU_HW_FLAGS     = -M virt -m 256 -smp $(CPUS) -nographic -display none
 QEMU_BOOT_FLAGS   = -bios $(OPENSBI) -kernel $(UBOOT)
-QEMU_NET_HW_FLAGS = -device virtio-net-device,netdev=net -netdev user,id=net,tftp=build
-QEMU_FLAGS        = $(QEMU_HW_FLAGS) $(QEMU_BOOT_FLAGS) $(QEMU_NET_HW_FLAGS)
+QEMU_DSK_HW_FLAGS = -drive file=fat:rw:image,format=raw,id=hd0 \
+		    -device virtio-blk-device,drive=hd0
+QEMU_FLAGS        = $(QEMU_HW_FLAGS) $(QEMU_BOOT_FLAGS) $(QEMU_DSK_HW_FLAGS)
 run: $K/kleinix.img
-	mkdir -p build
-	mkimage -f boot/kleinix.its build/kleinix.itb
-	mkimage -A riscv -T script -C none -n 'Boot script' -d boot/uboot.cmd build/boot.scr.uimg
+	mkdir -p image/EFI/BOOT
+	cp kernel/kleinix.img image/kernel.bin
+	cp boot/loader.efi image/EFI/BOOT/BOOTRISCV64.EFI
 	$(QEMU) $(QEMU_FLAGS)
