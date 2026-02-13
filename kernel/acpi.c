@@ -4,8 +4,8 @@
 
 #include "acpi.h"
 #include "serial.h"
+#include "smp.h"
 
-static int num_cpus = 0;
 static uint16_t pm1a_cnt_blk = 0;
 static uint16_t slp_typa = 0;
 
@@ -28,7 +28,7 @@ static int memcmp(const void *s1, const void *s2, size_t n)
     return 0;
 }
 
-/* Parse MADT to count CPUs */
+/* Parse MADT to enumerate CPUs */
 static void parse_madt(struct acpi_madt *madt)
 {
     uint8_t *ptr = (uint8_t *)(madt + 1);
@@ -36,7 +36,7 @@ static void parse_madt(struct acpi_madt *madt)
     
     serial_printf("  Local APIC at 0x%x\n", madt->local_apic_addr);
     
-    while (ptr < end) {
+    while (ptr < end && num_cpus < MAX_CPUS) {
         struct madt_entry_header *entry = (struct madt_entry_header *)ptr;
         
         if (entry->type == MADT_TYPE_LOCAL_APIC) {
@@ -44,6 +44,10 @@ static void parse_madt(struct acpi_madt *madt)
             
             if (lapic->flags & MADT_LAPIC_ENABLED) {
                 serial_printf("  CPU %d: APIC ID %d\n", num_cpus, lapic->apic_id);
+                cpus[num_cpus].apic_id = lapic->apic_id;
+                cpus[num_cpus].present = 1;
+                cpus[num_cpus].started = 0;
+                cpus[num_cpus].is_bsp = 0;
                 num_cpus++;
             }
         }

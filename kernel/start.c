@@ -5,6 +5,7 @@
 #include "types.h"
 #include "serial.h"
 #include "acpi.h"
+#include "smp.h"
 
 /* Boot info structure from EFI loader */
 struct boot_info {
@@ -23,7 +24,7 @@ struct boot_info {
 #define BOOT_INFO_MAGIC 0x424F4F54494E464FULL
 
 #define OSNAME  "Kleinix"
-#define VERSION "0.0.1"
+#define VERSION "0.0.2"
 #define BANNER \
     " _     _        _       _\n" \
     "| |   | |      (_)     (_)\n" \
@@ -44,7 +45,8 @@ static void delay(int seconds)
 /* Called from entry.S */
 void start(struct boot_info *info)
 {
-    int num_cpus;
+    int ncpus;
+    uint32_t bsp_apic_id = 0;
     
     /* Initialize serial console first */
     serial_init();
@@ -67,20 +69,36 @@ void start(struct boot_info *info)
     serial_puts("\n");
     
     /* Initialize ACPI and enumerate CPUs */
-    num_cpus = acpi_init(info->acpi_rsdp);
+    ncpus = acpi_init(info->acpi_rsdp);
     
-    if (num_cpus > 0) {
-        serial_printf("\nFound %d CPU(s)\n", num_cpus);
+    if (ncpus > 0) {
+        serial_printf("\nFound %d CPU(s)\n", ncpus);
     } else {
         serial_printf("\nNo CPUs found via ACPI\n");
+        goto hello;
     }
     
-    serial_printf("\nHello World from Kleinix on x86_64!\n");
-    serial_printf("\nSystem will shutdown in 3 seconds...\n");
+    /* Initialize SMP - wake up all APs */
+    smp_init();
+    
+    /* BSP prints its hello message */
+    bsp_apic_id = get_apic_id();
+    
+hello:
+    spin_lock(&print_lock);
+    serial_printf("\nHello World from Kleinix on x86_64! (main CPU, APIC ID %d)\n", 
+                  bsp_apic_id);
+    spin_unlock(&print_lock);
+    
+    /* Give APs a moment to print their messages */
+    delay(1);
+    
+    serial_printf("\nAll %d CPUs running. System will shutdown in 3 seconds...\n", 
+                  cpus_running);
     
     delay(3);
     
-    /* Shutdown via ACPI */
+    /* Only BSP initiates shutdown */
     acpi_shutdown();
     
 halt:

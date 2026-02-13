@@ -5,6 +5,8 @@ OBJS = \
   $K/entry.o   \
   $K/serial.o  \
   $K/acpi.o    \
+  $K/smp.o     \
+  $K/ap_trampoline.o \
   $K/start.o
 
 CC      = gcc
@@ -25,6 +27,9 @@ LDFLAGS = -nostdlib -z max-page-size=4096
 all: $K/kleinix.img
 
 $K/entry.o: $K/entry.S
+	$(CC) -c -o $@ $<
+
+$K/ap_trampoline.o: $K/ap_trampoline.S
 	$(CC) -c -o $@ $<
 
 $K/%.o: $K/%.c
