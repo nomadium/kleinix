@@ -3,11 +3,13 @@
 #include "riscv.h"
 #include "klibc.h"
 #include "cpu.h"
+#include "fdt.h"
 
 // entry.S needs one stack per CPU.
 __attribute__ ((aligned (16))) char stack0[4096 * NCPU];
 
-int boot_hart_id = -1;
+/* Initialized to -1 so it goes in .data, not .bss (which gets zeroed) */
+volatile int boot_hart_id = -1;
 
 extern void _entry(void);
 
@@ -35,6 +37,14 @@ start()
 	cpu_identify(hart_id);
 	sbi_printf("cpu%d: Hello World!!!\n", hart_id);
 	sbi_printf("boot_hart_id: %d\n", boot_hart_id);
+
+	/* Print device tree */
+	void *dtb = fdt_get_dtb();
+	sbi_printf("\nDevice Tree (DTB at 0x%lx):\n", (unsigned long)dtb);
+	sbi_puts("----------------------------------------\n");
+	fdt_print(dtb);
+	sbi_puts("----------------------------------------\n\n");
+
 	sbi_non_boot_hart_start((unsigned long)_entry);
 	// assert boot_hart_id > 0;
 	// report boot_hart_id

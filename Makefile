@@ -4,6 +4,7 @@ K = kernel
 OBJS = \
   $K/entry.o       \
   $K/cpu.o         \
+  $K/fdt.o         \
   $K/klibc.o       \
   $K/sbi.o         \
   $K/sbi_console.o \

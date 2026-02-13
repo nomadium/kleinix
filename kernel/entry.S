@@ -6,13 +6,15 @@ _entry:
     # So by using this bootloader and this de-facto standard, we can rely on that as well.
     # See: https://www.kernel.org/doc/html/next/riscv/boot.html
 
-    # save hart id in tp
+    # save hart id in tp, dtb pointer in s11 (callee-saved)
     mv   tp, a0
+    mv   s11, a1
 
-    # check/save boot hart id
-    la   t0, boot_hart_id        # load boot_hart_id value
-    lw   t1, 0(t0)               # from memory
-    bge  t1, zero, sstack        # if >= 0, system already booted, go to stack set up
+    # Check if this is the boot hart (boot_hart_id == -1 means not yet set)
+    # boot_hart_id is in .data (initialized to -1), so it survives BSS clearing
+    la   t0, boot_hart_id
+    lw   t1, 0(t0)
+    bge  t1, zero, sstack       # if >= 0, another hart already booted
 
     # First hart: zero out .bss section
     la   t0, _bss_start
@@ -24,9 +26,11 @@ bss_clear:
     j    bss_clear
 bss_done:
 
-    # Now store boot hart id
+    # Store boot hart id and DTB pointer
     la   t0, boot_hart_id
     sw   tp, 0(t0)
+    la   t0, dtb_ptr
+    sd   s11, 0(t0)
 
 sstack:
     # set up a stack for C.
@@ -41,7 +45,7 @@ sstack:
     add  sp, sp, a0
 
     # non-boot cpu(s) jump to non_boot_start() in start.c
-    la   t0, boot_hart_id        # load boot_hard_id value
+    la   t0, boot_hart_id        # load boot_hart_id value
     lw   t1, 0(t0)               # from memory again
     bne  tp, t1, non_boot_start  # if this is not a boot hart, jump to non_boot_start
 
