@@ -50,7 +50,7 @@ clean:
 
 # QEMU with OVMF
 OVMF    = /usr/share/ovmf/OVMF.fd
-LOADER  = loader.efi
+LOADER  = boot/loader.efi
 
 run: $K/kleinix.img
 	mkdir -p image/EFI/BOOT
