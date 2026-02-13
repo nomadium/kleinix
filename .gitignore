@@ -1,8 +1,8 @@
-build/
-*/*.o
-*/*.d
-*/*.asm
-*/*.elf
-*/*.img
-*/*.sym
-Makefile.local
+kernel/*.o
+kernel/*.d
+kernel/*.elf
+kernel/*.img
+kernel/*.asm
+kernel/*.sym
+image/
+ovmf_vars.fd

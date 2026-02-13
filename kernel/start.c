@@ -1,71 +1,91 @@
-#include "sbi/sbi.h"
-#include "param.h"
-#include "riscv.h"
-#include "klibc.h"
-#include "cpu.h"
-#include "fdt.h"
+/*
+ * Kleinix x86_64 kernel main entry point
+ */
 
-// entry.S needs one stack per CPU.
-__attribute__ ((aligned (16))) char stack0[4096 * NCPU];
+#include "types.h"
+#include "serial.h"
+#include "acpi.h"
 
-/* Initialized to -1 so it goes in .data, not .bss (which gets zeroed) */
-volatile int boot_hart_id = -1;
+/* Boot info structure from EFI loader */
+struct boot_info {
+    uint64_t magic;
+    uint64_t mem_map_addr;
+    uint64_t mem_map_size;
+    uint64_t mem_map_desc_size;
+    uint64_t framebuffer_addr;
+    uint64_t framebuffer_width;
+    uint64_t framebuffer_height;
+    uint64_t framebuffer_pitch;
+    uint64_t acpi_rsdp;
+    uint64_t num_cpus;
+};
 
-extern void _entry(void);
+#define BOOT_INFO_MAGIC 0x424F4F54494E464FULL
 
 #define OSNAME  "Kleinix"
 #define VERSION "0.0.1"
-#define BANNER                                    \
-	" _     _        _       _\n"             \
-	"| |   | |      (_)     (_)\n"            \
-	"| |  _| | _____ _ ____  _ _   _\n"       \
-	"| |_/ ) || ___ | |  _ \\| ( \\ / )\n"    \
-	"|  _ (| || ____| | | | | |) X (\n"       \
-	"|_| \\_)\\_)_____)_|_| |_|_(_/ \\_)\n\n"
+#define BANNER \
+    " _     _        _       _\n" \
+    "| |   | |      (_)     (_)\n" \
+    "| |  _| | _____ _ ____  _ _   _\n" \
+    "| |_/ ) || ___ | |  _ \\| ( \\ / )\n" \
+    "|  _ (| || ____| | | | | |) X (\n" \
+    "|_| \\_)\\_)_____)_|_| |_|_(_/ \\_)\n\n"
 
-
-// entry.S: boot cpu jumps here in supervisor mode on stack0.
-void
-start()
+/* Simple delay loop */
+static void delay(int seconds)
 {
-	int hart_id = hartid();
-
-	sbi_console_init();
-	sbi_puts(BANNER);
-	sbi_printf("%s v%s\n", OSNAME, VERSION);
-	sbi_identify();
-	cpu_identify(hart_id);
-	sbi_printf("cpu%d: Hello World!!!\n", hart_id);
-	sbi_printf("boot_hart_id: %d\n", boot_hart_id);
-
-	/* Print device tree */
-	void *dtb = fdt_get_dtb();
-	sbi_printf("\nDevice Tree (DTB at 0x%lx):\n", (unsigned long)dtb);
-	sbi_puts("----------------------------------------\n");
-	fdt_print(dtb);
-	sbi_puts("----------------------------------------\n\n");
-
-	sbi_non_boot_hart_start((unsigned long)_entry);
-	// assert boot_hart_id > 0;
-	// report boot_hart_id
-	// main();
-	sbi_printf("cpu%d: system will shutdown in a few secs...\n", hart_id);
-	delay(10);
-	sbi_system_shutdown();
-	sbi_hart_hang(); // unreachable
+    /* Very rough delay - about 1 second per iteration on QEMU */
+    for (int s = 0; s < seconds; s++) {
+        for (volatile int i = 0; i < 100000000; i++);
+    }
 }
 
-// non-boot cpu(s) jump here in supervisor mode on stack0.
-void
-non_boot_start(void)
+/* Called from entry.S */
+void start(struct boot_info *info)
 {
-	int hart_id = hartid();
-	cpu_identify(hart_id);
-	sbi_printf("cpu%d: non_boot_cpu\n", hart_id);
-	if (hart_id == 1) { // testing enabling interrups in 1 core
-		intrsinit();
-		timerinit();
-	}
-	delay(10);       // not reached for now
-	sbi_hart_hang(); // not reached for now
+    int num_cpus;
+    
+    /* Initialize serial console first */
+    serial_init();
+    
+    /* Print banner */
+    serial_puts(BANNER);
+    serial_printf("%s v%s (x86_64)\n\n", OSNAME, VERSION);
+    
+    /* Verify boot info */
+    if (!info || info->magic != BOOT_INFO_MAGIC) {
+        serial_printf("Error: Invalid boot info (magic=0x%lx)\n", 
+                      info ? info->magic : 0);
+        goto halt;
+    }
+    
+    serial_printf("Boot info at %p\n", info);
+    serial_printf("  Memory map: %d bytes at 0x%lx\n", 
+                  (int)info->mem_map_size, info->mem_map_addr);
+    serial_printf("  ACPI RSDP: 0x%lx\n", info->acpi_rsdp);
+    serial_puts("\n");
+    
+    /* Initialize ACPI and enumerate CPUs */
+    num_cpus = acpi_init(info->acpi_rsdp);
+    
+    if (num_cpus > 0) {
+        serial_printf("\nFound %d CPU(s)\n", num_cpus);
+    } else {
+        serial_printf("\nNo CPUs found via ACPI\n");
+    }
+    
+    serial_printf("\nHello World from Kleinix on x86_64!\n");
+    serial_printf("\nSystem will shutdown in 3 seconds...\n");
+    
+    delay(3);
+    
+    /* Shutdown via ACPI */
+    acpi_shutdown();
+    
+halt:
+    serial_printf("\nSystem halted.\n");
+    while (1) {
+        __asm__ volatile("hlt");
+    }
 }

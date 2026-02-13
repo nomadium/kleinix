@@ -1,56 +1,45 @@
+/*
+ * Kleinix x86_64 kernel entry point
+ *
+ * Entry convention (from EFI loader):
+ *   RDI = pointer to boot_info structure
+ *
+ * We're already in 64-bit long mode with paging enabled by UEFI.
+ */
+
 .section .text
-.global _entry
-_entry:
-    # Main U-Boot use case is to boot Linux kernels.
-    # Linux kernel in RISC-V expects to have the hartid of the current core in a0.
-    # So by using this bootloader and this de-facto standard, we can rely on that as well.
-    # See: https://www.kernel.org/doc/html/next/riscv/boot.html
+.global _start
+.extern start
 
-    # save hart id in tp, dtb pointer in s11 (callee-saved)
-    mv   tp, a0
-    mv   s11, a1
+_start:
+    /* Save boot_info pointer */
+    movq %rdi, %r15
 
-    # Check if this is the boot hart (boot_hart_id == -1 means not yet set)
-    # boot_hart_id is in .data (initialized to -1), so it survives BSS clearing
-    la   t0, boot_hart_id
-    lw   t1, 0(t0)
-    bge  t1, zero, sstack       # if >= 0, another hart already booted
+    /* Set up a stack (16KB per CPU, start with CPU 0) */
+    leaq stack_top(%rip), %rsp
 
-    # First hart: zero out .bss section
-    la   t0, _bss_start
-    la   t1, _bss_end
-bss_clear:
-    bge  t0, t1, bss_done
-    sd   zero, 0(t0)
-    addi t0, t0, 8
-    j    bss_clear
-bss_done:
+    /* Clear direction flag */
+    cld
 
-    # Store boot hart id and DTB pointer
-    la   t0, boot_hart_id
-    sw   tp, 0(t0)
-    la   t0, dtb_ptr
-    sd   s11, 0(t0)
+    /* Clear BSS */
+    leaq _bss_start(%rip), %rdi
+    leaq _bss_end(%rip), %rcx
+    subq %rdi, %rcx
+    shrq $3, %rcx           /* Count in qwords */
+    xorq %rax, %rax
+    rep stosq
 
-sstack:
-    # set up a stack for C.
-    # stack0 is declared in start.c,
-    # with a 4096-byte stack per CPU.
-    # sp = stack0 + (hartid * 4096)
-    la   sp, stack0
-    li   a0, 1024*4
-    mv   a1, tp
-    addi a1, a1, 1
-    mul  a0, a0, a1
-    add  sp, sp, a0
-
-    # non-boot cpu(s) jump to non_boot_start() in start.c
-    la   t0, boot_hart_id        # load boot_hart_id value
-    lw   t1, 0(t0)               # from memory again
-    bne  tp, t1, non_boot_start  # if this is not a boot hart, jump to non_boot_start
-
-    # boot cpu jumps to start() in start.c
+    /* Call C entry point with boot_info pointer */
+    movq %r15, %rdi
     call start
 
-spin:
-    j spin
+    /* Should not return, but just in case... */
+halt_loop:
+    hlt
+    jmp halt_loop
+
+.section .bss
+.align 16
+stack_bottom:
+    .space 16384            /* 16KB stack */
+stack_top:

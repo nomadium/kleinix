@@ -1,11 +1,42 @@
+/* x86_64 kernel linker script */
+
+ENTRY(_start)
+
 SECTIONS
 {
-  . = 0x80200000; /* XXX: this is not portable, fix */
-  .text : { *(.text) }
-  .rodata : { *(.rodata*) }
-  .data : { *(.data) *(.sdata*) }
-  . = ALIGN(8);
-  _bss_start = .;
-  .bss  : { *(.bss) *(.sbss*) }
-  _bss_end = .;
+    /* Load at 1MB - traditional x86 kernel load address */
+    . = 0x100000;
+
+    .text : {
+        *(.text)
+        *(.text.*)
+    }
+
+    .rodata : {
+        *(.rodata)
+        *(.rodata.*)
+    }
+
+    .data : {
+        *(.data)
+        *(.data.*)
+    }
+
+    . = ALIGN(8);
+    _bss_start = .;
+
+    .bss : {
+        *(.bss)
+        *(.bss.*)
+        *(COMMON)
+    }
+
+    _bss_end = .;
+
+    /* Discard unwanted sections */
+    /DISCARD/ : {
+        *(.comment)
+        *(.eh_frame)
+        *(.note.*)
+    }
 }
