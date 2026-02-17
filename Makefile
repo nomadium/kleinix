@@ -9,7 +9,8 @@ OBJS = \
   $K/sbi_console.o \
   $K/sbi_helper.o  \
   $K/spinlock.o    \
-  $K/start.o
+  $K/start.o       \
+  $K/uart.o
 
 TOOLPREFIX = riscv64-unknown-elf-
 CC         = $(TOOLPREFIX)gcc

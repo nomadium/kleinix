@@ -3,6 +3,7 @@
 #include "riscv.h"
 #include "klibc.h"
 #include "cpu.h"
+#include "uart.h"
 
 // entry.S needs one stack per CPU.
 __attribute__ ((aligned (16))) char stack0[4096 * NCPU];
@@ -29,6 +30,8 @@ start()
 	int hart_id = hartid();
 
 	sbi_console_init();
+	uart_init();
+
 	sbi_puts(BANNER);
 	sbi_printf("%s v%s\n", OSNAME, VERSION);
 	sbi_identify();
@@ -36,6 +39,7 @@ start()
 	sbi_printf("cpu%d: Hello World!!!\n", hart_id);
 	sbi_printf("boot_hart_id: %d\n", boot_hart_id);
 	sbi_non_boot_hart_start((unsigned long)_entry);
+	uart_puts("uart device is initialized!\n");
 	// assert boot_hart_id > 0;
 	// report boot_hart_id
 	// main();
