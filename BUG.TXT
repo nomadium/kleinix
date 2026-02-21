@@ -3,3 +3,9 @@ vf2 notes
 - it boots but...
 - bug in kernel with cpu id == 1 (vf2 has 5 harts one is special)
 - debug extension works but uart driver doesn't, it seems to hang or crash
+
+How to boot?
+
+load mmc 0:1 ${fdt_addr_r} jh7110-starfive-visionfive-2-v1.3b.dtb
+load mmc 0:1 ${kernel_addr_r} efi/boot/bootriscv64.efi
+bootefi ${kernel_addr_r} ${fdt_addr_r} 
