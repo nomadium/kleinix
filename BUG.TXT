@@ -1,0 +1,5 @@
+vf2 notes
+
+- it boots but...
+- bug in kernel with cpu id == 1 (vf2 has 5 harts one is special)
+- debug extension works but uart driver doesn't, it seems to hang or crash
