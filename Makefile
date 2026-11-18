@@ -51,7 +51,7 @@ CPUS    ?= 4
 QEMU              = qemu-system-riscv64
 QEMU_HW_FLAGS     = -M virt -m 256 -smp $(CPUS) -nographic -display none
 QEMU_BOOT_FLAGS   = -bios $(OPENSBI) -kernel $(UBOOT)
-QEMU_DSK_HW_FLAGS = -drive file=fat:rw:image,format=raw,id=hd0 \
+QEMU_DSK_HW_FLAGS = -drive file=fat:rw:image,format=raw,if=none,id=hd0 \
 		    -device virtio-blk-device,drive=hd0
 QEMU_FLAGS        = $(QEMU_HW_FLAGS) $(QEMU_BOOT_FLAGS) $(QEMU_DSK_HW_FLAGS)
 run: $K/kleinix.img
